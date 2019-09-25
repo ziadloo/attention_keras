@@ -10,23 +10,26 @@ class AttentionLayer(Layer):
     There are three sets of weights introduced W_a, U_a, and V_a
      """
 
-    def __init__(self, **kwargs):
+    def __init__(self, attention_dim=None, **kwargs):
         super(AttentionLayer, self).__init__(**kwargs)
+        self.attention_dim = attention_dim
 
     def build(self, input_shape):
         assert isinstance(input_shape, list)
         # Create a trainable weight variable for this layer.
+        if self.attention_dim is None:
+            self.attention_dim = input_shape[0][2]
 
         self.W_a = self.add_weight(name='W_a',
-                                   shape=tf.TensorShape((input_shape[0][2], input_shape[0][2])),
+                                   shape=tf.TensorShape((input_shape[0][2], self.attention_dim)), # (d1, d3)
                                    initializer='uniform',
                                    trainable=True)
         self.U_a = self.add_weight(name='U_a',
-                                   shape=tf.TensorShape((input_shape[1][2], input_shape[0][2])),
+                                   shape=tf.TensorShape((input_shape[1][2], self.attention_dim)), # (d2, d3)
                                    initializer='uniform',
                                    trainable=True)
         self.V_a = self.add_weight(name='V_a',
-                                   shape=tf.TensorShape((input_shape[0][2], 1)),
+                                   shape=tf.TensorShape((self.attention_dim, 1)), # (d3, 1)
                                    initializer='uniform',
                                    trainable=True)
 
@@ -45,6 +48,8 @@ class AttentionLayer(Layer):
         def energy_step(inputs, states):
             """ Step function for computing energy for a single decoder state """
 
+            # input: (batch_size, latent_dim)
+
             assert_msg = "States must be a list. However states {} is of type {}".format(states, type(states))
             assert isinstance(states, list) or isinstance(states, tuple), assert_msg
 
@@ -53,28 +58,29 @@ class AttentionLayer(Layer):
             de_hidden = inputs.shape[-1]
 
             """ Computing S.Wa where S=[s0, s1, ..., si]"""
-            # <= batch_size*en_seq_len, latent_dim
+            # <= (batch_size * en_seq_len, latent_dim)
             reshaped_enc_outputs = K.reshape(encoder_out_seq, (-1, en_hidden))
-            # <= batch_size*en_seq_len, latent_dim
-            W_a_dot_s = K.reshape(K.dot(reshaped_enc_outputs, self.W_a), (-1, en_seq_len, en_hidden))
+            # <= (batch_size, en_seq_len, latent_dim|d3)
+            W_a_dot_s = K.reshape(K.dot(reshaped_enc_outputs, self.W_a), (-1, en_seq_len, self.attention_dim))
             if verbose:
-                print('wa.s>',W_a_dot_s.shape)
+                print('wa.s>', W_a_dot_s.shape)
 
             """ Computing hj.Ua """
+            # (batch_size, d3)
             U_a_dot_h = K.expand_dims(K.dot(inputs, self.U_a), 1)  # <= batch_size, 1, latent_dim
             if verbose:
-                print('Ua.h>',U_a_dot_h.shape)
+                print('Ua.h>', U_a_dot_h.shape)
 
             """ tanh(S.Wa + hj.Ua) """
-            # <= batch_size*en_seq_len, latent_dim
-            reshaped_Ws_plus_Uh = K.tanh(K.reshape(W_a_dot_s + U_a_dot_h, (-1, en_hidden)))
+            # <= (batch_size, en_seq_len, latent_dim|d3)
+            reshaped_Ws_plus_Uh = K.tanh(K.reshape(W_a_dot_s + U_a_dot_h, (-1, self.attention_dim)))
             if verbose:
                 print('Ws+Uh>', reshaped_Ws_plus_Uh.shape)
 
             """ softmax(va.tanh(S.Wa + hj.Ua)) """
-            # <= batch_size, en_seq_len
+            # <= (batch_size, en_seq_len)
             e_i = K.reshape(K.dot(reshaped_Ws_plus_Uh, self.V_a), (-1, en_seq_len))
-            # <= batch_size, en_seq_len
+            # <= (batch_size, en_seq_len)
             e_i = K.softmax(e_i)
 
             if verbose:
@@ -84,7 +90,7 @@ class AttentionLayer(Layer):
 
         def context_step(inputs, states):
             """ Step function for computing ci using ei """
-            # <= batch_size, hidden_size
+            # <= (batch_size, hidden_size)
             c_i = K.sum(encoder_out_seq * K.expand_dims(inputs, -1), axis=1)
             if verbose:
                 print('ci>', c_i.shape)
@@ -92,11 +98,7 @@ class AttentionLayer(Layer):
 
         def create_inital_state(inputs, hidden_size):
             # We are not using initial states, but need to pass something to K.rnn funciton
-            fake_state = K.zeros_like(inputs)  # <= (batch_size, enc_seq_len, latent_dim
-            fake_state = K.sum(fake_state, axis=[1, 2])  # <= (batch_size)
-            fake_state = K.expand_dims(fake_state)  # <= (batch_size, 1)
-            fake_state = K.tile(fake_state, [1, hidden_size])  # <= (batch_size, latent_dim
-            return fake_state
+            return K.zeros(shape=(inputs.shape[0], hidden_size))
 
         fake_state_c = create_inital_state(encoder_out_seq, encoder_out_seq.shape[-1])
         fake_state_e = create_inital_state(encoder_out_seq, encoder_out_seq.shape[1])  # <= (batch_size, enc_seq_len, latent_dim
