@@ -44,7 +44,7 @@ class AttentionLayer(Layer):
         """
         inputs: [encoder_output_sequence, decoder_output_sequence]
         """
-        assert isinstance(input_shape, dict)
+        assert isinstance(inputs, dict)
         assert 'values' in inputs
         assert 'query' in inputs
 
