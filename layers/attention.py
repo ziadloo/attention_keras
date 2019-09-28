@@ -23,7 +23,7 @@ class AttentionLayer(Layer):
         if not isinstance(input_shape["values"], list):
             input_shape["values"] = [input_shape["values"]]
         if self.attention_dim is None:
-            self.attention_dim = input_shape["values"][0][-1]
+            self.attention_dim = int(input_shape["values"][0][-1])
 
         self.W_a = self.add_weight(name='W_a',
                                    shape=(sum([int(s[-1]) for s in input_shape["values"]]), self.attention_dim), # (lat1+lat2+...+latn, d3)
