@@ -16,7 +16,12 @@ class AttentionLayer(Layer):
 
     def build(self, input_shape):
         assert isinstance(input_shape, dict)
+        assert 'values' in input_shape
+        assert 'query' in input_shape
+        
         # Create a trainable weight variable for this layer.
+        if not isinstance(input_shape["values"], list):
+            input_shape["values"] = [input_shape["values"]]
         if self.attention_dim is None:
             self.attention_dim = input_shape["values"][0][-1]
 
@@ -39,7 +44,13 @@ class AttentionLayer(Layer):
         """
         inputs: [encoder_output_sequence, decoder_output_sequence]
         """
-        assert type(inputs) == dict
+        assert isinstance(input_shape, dict)
+        assert 'values' in inputs
+        assert 'query' in inputs
+
+        if not isinstance(inputs["values"], list):
+            inputs["values"] = [inputs["values"]]
+        
         encoder_out_seq, decoder_out_seq = inputs["values"], inputs["query"]
         if verbose:
             print('encoder_out_seq>', [eos.shape for eos in encoder_out_seq])

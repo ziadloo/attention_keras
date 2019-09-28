@@ -26,7 +26,7 @@ def define_nmt(hidden_size, batch_size, en_timesteps, en_vsize, fr_timesteps, fr
 
     # Attention layer
     attn_layer = AttentionLayer(name='attention_layer')
-    attn_out, attn_states = attn_layer([encoder_out, decoder_out])
+    attn_out, attn_states = attn_layer({"values": encoder_out, "query": decoder_out})
 
     # Concat attention input and decoder GRU output
     decoder_concat_input = Concatenate(axis=-1, name='concat_layer')([decoder_out, attn_out])
@@ -57,7 +57,7 @@ def define_nmt(hidden_size, batch_size, en_timesteps, en_vsize, fr_timesteps, fr
 
     decoder_inf_out, decoder_inf_state = decoder_gru(
         decoder_inf_inputs, initial_state=decoder_init_state)
-    attn_inf_out, attn_inf_states = attn_layer([encoder_inf_states, decoder_inf_out])
+    attn_inf_out, attn_inf_states = attn_layer({"values": encoder_inf_states, "query": decoder_inf_out})
     decoder_inf_concat = Concatenate(axis=-1, name='concat')([decoder_inf_out, attn_inf_out])
     decoder_inf_pred = TimeDistributed(dense)(decoder_inf_concat)
     decoder_model = Model(inputs=[encoder_inf_states, decoder_init_state, decoder_inf_inputs],
