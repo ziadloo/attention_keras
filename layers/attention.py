@@ -121,8 +121,8 @@ class AttentionLayer(Layer):
             return c_i, states
 
         # <= (batch_size, enc_seq_len, latent_dim   encoder_out_seq.shape[-2]
-        fake_state_e = K.zeros_like(K.placeholder(shape=(decoder_out_seq.shape[0], 1)))
-        fake_state_c = K.zeros_like(K.placeholder(shape=(decoder_out_seq.shape[0], 1)))
+        fake_state_e = K.zeros_like(K.placeholder(shape=(1, 1))) #decoder_out_seq.shape[0]
+        fake_state_c = K.zeros_like(K.placeholder(shape=(1, 1)))
 
         """ Computing energy outputs """
         # e_outputs => (batch_size, de_seq_len, en_seq_len)
@@ -147,3 +147,6 @@ class AttentionLayer(Layer):
             tf.TensorShape((input_shape["query"][0], input_shape["query"][-2], latent_size_sum)),
             tf.TensorShape((input_shape["query"][0], input_shape["query"][-2], hidden_size_product))
         ]
+    
+    def get_config(self):
+        return {'attention_dim': self.attention_dim}
