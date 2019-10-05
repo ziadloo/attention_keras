@@ -69,6 +69,10 @@ After the model trained attention result should look like below.
 
 ![Attention heatmap](https://github.com/thushv89/attention_keras/blob/master/results/attention.png)
 
+The same plot but for a model trained with sub-words as tokens.
+
+![Attention heatmap](https://github.com/thushv89/attention_keras/blob/master/results/attention_scores_subword.png)
+
 ## Running the NMT example
 
 In order to run the example you need to download `small_vocab_en.txt` and `small_vocab_fr.txt` from [Udacity deep learning repository](https://github.com/udacity/deep-learning/tree/master/language-translation/data) and place them in the `data` folder.
