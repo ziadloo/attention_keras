@@ -67,11 +67,11 @@ An example of attention weights can be seen in `model.train_nmt.py`
 
 After the model trained attention result should look like below.
 
-![Attention heatmap](https://github.com/thushv89/attention_keras/blob/master/results/attention.png)
+![Attention heatmap](https://github.com/ziadloo/attention_keras/blob/master/results/attention.png)
 
 The same plot but for a model trained with sub-words as tokens.
 
-![Attention heatmap](https://github.com/thushv89/attention_keras/blob/master/results/attention_scores_subword.png)
+![Attention heatmap](https://github.com/ziadloo/attention_keras/blob/master/results/attention_scores_subword.png)
 
 ## Running the NMT example
 
