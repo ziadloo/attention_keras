@@ -50,7 +50,8 @@ Or as for the multiple joint values:
 from attention_keras.layers.attention import AttentionLayer
 
 attn_layer = AttentionLayer(name='attention_layer')
-attn_out, attn_states = attn_layer({"values": [encoder1_outputs, encoder2_outputs], "query": decoder_outputs})
+attn_out, attn_states = attn_layer({"values": [encoder1_outputs, encoder2_outputs],
+                                    "query": decoder_outputs})
 
 ```
 
@@ -73,11 +74,11 @@ The same plot but for a model trained with sub-words as tokens.
 
 ![Attention heatmap](https://github.com/ziadloo/attention_keras/blob/master/results/attention_scores_subword.png)
 
-## Running the NMT example
+## Running the examples
 
 In order to run the example you need to download `small_vocab_en.txt` and `small_vocab_fr.txt` from [Udacity deep learning repository](https://github.com/udacity/deep-learning/tree/master/language-translation/data) and place them in the `data` folder.
 
-Also, there's an LSTM version of the same example in Colab [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ziadloo/attention_keras/blob/master/examples/colab/LSTM.ipynb)
+Also, there's an LSTM version of the same example in Colab, just follow the instructions [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ziadloo/attention_keras/blob/master/examples/colab/LSTM.ipynb)
 
 ___
 
