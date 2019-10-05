@@ -2,28 +2,33 @@
 
 ## Version (s)
 
-- TensorFlow: 1.12.0 (Tested)
+- TensorFlow: 1.14.0 (Tested)
 - TensorFlow: 2.0 (Should be easily portable as all the backend functions are availalbe in TF 2.0. However has not been tested yet.)
 
 ## Introduction
 
-This is an implementation of Attention (only supports [Bahdanau Attention](https://arxiv.org/pdf/1409.0473.pdf) right now)
+This is an implementation of Attention (only supports [Bahdanau Attention](https://arxiv.org/pdf/1409.0473.pdf) right now) in Keras. This implementation also supports multiple joint values as the input with a single query.
 
 ## Project structure
 
 ```
-data (Download data and place it here)
- |--- small_vocab_en.txt
- |--- small_vocab_fr.txt
+data (sample data for the examples)
+ |--- en.model
+ |--- en.vocab
+ |--- fr.model
+ |--- fr.vocab
+ └--- lstm_weights.h5
 layers
- |--- attention.py (Attention implementation)
+ └--- attention.py (Attention implementation)
 examples
- |--- nmt
+ └--- colab
+   └--- LSTM.ipynb (Jupyter notebook to be run on Google Colab)
+ └--- nmt
    |--- model.py (NMT model defined with Attention)
-   |--- train.py ( Code for training/inferring/plotting attention with NMT model)
- |--- nmt_bidirectional
+   └--- train.py ( Code for training/inferring/plotting attention with NMT model)
+ └--- nmt_bidirectional
    |--- model.py (NMT birectional model defined with Attention)
-   |--- train.py ( Code for training/inferring/plotting attention with NMT model)
+   └--- train.py ( Code for training/inferring/plotting attention with NMT model)
 results (created by train_nmt.py to store model)
 
 ```
@@ -35,7 +40,17 @@ Just like you would use any other `tensoflow.python.keras.layers` object.
 from attention_keras.layers.attention import AttentionLayer
 
 attn_layer = AttentionLayer(name='attention_layer')
-attn_out, attn_states = attn_layer([encoder_outputs, decoder_outputs])
+attn_out, attn_states = attn_layer({"values": encoder_outputs, "query": decoder_outputs})
+
+```
+
+Or as for the multiple joint values:
+
+```python
+from attention_keras.layers.attention import AttentionLayer
+
+attn_layer = AttentionLayer(name='attention_layer')
+attn_out, attn_states = attn_layer({"values": [encoder1_outputs, encoder2_outputs], "query": decoder_outputs})
 
 ```
 
@@ -58,6 +73,12 @@ After the model trained attention result should look like below.
 
 In order to run the example you need to download `small_vocab_en.txt` and `small_vocab_fr.txt` from [Udacity deep learning repository](https://github.com/udacity/deep-learning/tree/master/language-translation/data) and place them in the `data` folder.
 
+Also, there's an LSTM version of the same example in Colab [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ziadloo/attention_keras/blob/master/examples/colab/LSTM.ipynb)
+
 ___
 
 If you have improvements (e.g. other attention mechanisms), contributions are welcome!
+
+## Disclaimer
+
+The original credit goes to [thushv89](https://github.com/thushv89/attention_keras)
