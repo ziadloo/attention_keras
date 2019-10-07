@@ -13,6 +13,9 @@ class AttentionLayer(Layer):
     def __init__(self, attention_dim=None, **kwargs):
         super(AttentionLayer, self).__init__(**kwargs)
         self.attention_dim = attention_dim
+        self.W_h = []
+        self.U_a = None
+        self.V_a = None
 
     def build(self, input_shape):
         assert isinstance(input_shape, dict)
@@ -25,10 +28,14 @@ class AttentionLayer(Layer):
         if self.attention_dim is None:
             self.attention_dim = int(input_shape["values"][0][-1])
 
-        self.W_a = self.add_weight(name='W_a',
-                                   shape=(sum([int(s[-1]) for s in input_shape["values"]]), self.attention_dim), # (lat1+lat2+...+latn, d3)
-                                   initializer='uniform',
-                                   trainable=True)
+        for i, h in enumerate(input_shape["values"]):
+            self.W_h.append(
+                self.add_weight(name="W_h_{}".format(i),
+                                # (lat_i, d3)
+                                shape=(int(h[-1]), self.attention_dim),
+                                initializer='uniform',
+                                trainable=True)
+            )
         self.U_a = self.add_weight(name='U_a',
                                    shape=(int(input_shape["query"][-1]), self.attention_dim), # (d2, d3)
                                    initializer='uniform',
@@ -56,26 +63,34 @@ class AttentionLayer(Layer):
             print('encoder_out_seq>', [eos.shape for eos in encoder_out_seq])
             print('decoder_out_seq>', decoder_out_seq.shape)
 
-        """ Computing h.Wa where h=[h0, h1, ..., hi]"""
-        # <= (batch_size, en_seq_len, latent_dim|d3)
+        # [h . W_h] with [(batch_size, hi, d3)]
+        W_hi = [K.dot(eos, self.W_h[i]) for i, eos in enumerate(encoder_out_seq)]
+
+        # h1*h2*...*hn
         hidden_size_product = functools.reduce(lambda a, b: a * b,
                                                [K.int_shape(eos)[-2] for eos in encoder_out_seq], 1)
+
+        # Repeat them all to (batch_size, h1*h2*...*hn, d3)
+        W_hi = [K.repeat_elements(eos, int(hidden_size_product / K.int_shape(eos)[-2]), axis=-2)
+                for eos in W_hi]
+
+        # (batch_size, h1*h2*...*hn, d3)
+        W_hi = sum(W_hi)
+
+        # lat1+lat2+...+latn
         latent_size_sum = sum([K.int_shape(eos)[-1] for eos in encoder_out_seq])
+        # A list of tensors all like (batch_size, h1*h2*...*hn, *)
         repeated_encoder_out = [K.repeat_elements(eos, int(hidden_size_product / K.int_shape(eos)[-2]), axis=-2)
                                 for eos in encoder_out_seq]
         # (batch_size, h1*h2*...*hn, lat1+lat2+...+latn)
         hiddens_combined = K.concatenate(repeated_encoder_out)
         # (batch_size*h1*h2*...*hn, lat1+lat2+...+latn)
         hiddens_combined = K.reshape(hiddens_combined, (-1, latent_size_sum))
-        # (batch_size*h1*h2*...*hn, d3)
-        W_a_dot_h = K.dot(hiddens_combined, self.W_a)
-        # (batch_size, h1*h2*...*hn, d3)
-        W_a_dot_h = K.reshape(W_a_dot_h, (-1, hidden_size_product, self.attention_dim))
         # (batch_size, h1*h2*...*hn, lat1+lat2+...+latn) for later
         hiddens_combined = K.reshape(hiddens_combined, (-1, hidden_size_product, latent_size_sum))
 
         if verbose:
-            print('wa.s>', W_a_dot_h.shape)
+            print('wa.s>', W_hi.shape)
 
         def energy_step(inputs, states):
             """ Step function for computing energy for a single decoder state """
@@ -92,7 +107,7 @@ class AttentionLayer(Layer):
 
             """ tanh(h.Wa + s.Ua) """
             # (batch_size, h1*h2*...*hn, d3) = (batch_size, h1*h2*...*hn, d3) + (batch_size, 1, d3)
-            Wh_plus_Us = K.tanh(W_a_dot_h + U_a_dot_s)
+            Wh_plus_Us = K.tanh(W_hi + U_a_dot_s)
             # (batch_size*h1*h2*...*hn, d3)
             reshaped_Wh_plus_Us = K.reshape(Wh_plus_Us, (-1, self.attention_dim))
             if verbose:
