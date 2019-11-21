@@ -43,7 +43,7 @@ class AttentionLayer(Layer):
                                    initializer='uniform',
                                    trainable=True)
         self.V_a = self.add_weight(name='V_a',
-                                   shape=(1, self.attention_dim),  # (d3, 1)
+                                   shape=(1, self.attention_dim),  # (1, d3)
                                    initializer='uniform',
                                    trainable=True)
 
